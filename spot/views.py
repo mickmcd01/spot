@@ -69,6 +69,9 @@ def top_artists(request, term):
 
 
 def recent_tracks(request):
+    # as of October 2018, pip install spotipy does not install the latest
+    # version, and it does not include current_user_recently_played. Download
+    # the latest from github to fix it.
     recently_played = []
     sp = setup_spot()
     if sp:
