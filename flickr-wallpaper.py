@@ -113,7 +113,11 @@ def process_views(cur):
 
     for photo in flickr.walk(user_id='mickmcd'):
         photo_id = photo.get('id')
-        process_one_photo(cur, flickr, photo_id)
+        info = flickr.photos.getInfo(photo_id=photo_id, format='json')
+        info_dict = json.loads(info.decode("utf-8"))
+        views = int(info_dict['photo']['views'])
+        if views > 100:
+            process_one_photo(cur, flickr, photo_id)
 
 def download(cur):
     download_count = 0
