@@ -8,80 +8,16 @@ import os
 import psycopg2
 import configparser
 import time
+from flickr_utils import connect, disconnect, flickr_keys
 
-def db_config(filename='/home/mick/flickr.ini'):
-    # create a parser
-    config = configparser.ConfigParser()
-    # read config file
-    config.read(filename)
-
-    # get postgres database settings
-    db = {}
-    if config.has_section('postgresql'):
-        params = config.items('postgresql')
-        for param in params:
-            db[param[0]] = param[1]
-    else:
-        raise Exception('Section postgresql not found in the {0} file'.format(filename))
- 
-    return db
-
-def flickr_keys(filename='/home/mick/flickr.ini'):
-    # create a parser
-    config = configparser.ConfigParser()
-    # read config file
-    config.read(filename)
-
-    # get flickr api key and secret
-    flickr_keys = {}
-    if config.has_section('flickr'):
-        params = config.items('flickr')
-        for param in params:
-            flickr_keys[param[0]] = param[1]
-    else:
-        raise Exception('Section flickr not found in the {0} file'.format(filename))
- 
-    return flickr_keys
-
-def connect():
-    """ Connect to the PostgreSQL database server """
-    conn = None
-    try:
-        # read connection parameters
-        params = db_config()
- 
-        # connect to the PostgreSQL server
-        print('Connecting to the PostgreSQL database...')
-        conn = psycopg2.connect(**params)
-        conn.set_session(autocommit=True)
- 
-        # create a cursor
-        cur = conn.cursor()
-        print('PostgreSQL database version:')
-        cur.execute('SELECT version()')
- 
-        # display the PostgreSQL database server version
-        db_version = cur.fetchone()
-        print(db_version)
-
-        return conn, cur
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-        return None, None
-    finally:
-        if conn is None:
-            print('Database connection closed.')
- 
-
-def disconnect(conn, cur):
-    cur.close()
-    conn.close()
 
 def process_one_photo(cur, flickr, photo_id, info_dict):
     title = info_dict['photo']['title']['_content']
     taken = info_dict['photo']['dates']['taken']
-    posted = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(info_dict['photo']['dates']['posted'])))
-    updated = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(info_dict['photo']['dates']['lastupdate'])))
+    posted = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(
+                            int(info_dict['photo']['dates']['posted'])))
+    updated = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(
+                             int(info_dict['photo']['dates']['lastupdate'])))
     views = int(info_dict['photo']['views'])
     wallpaper = 'FALSE'
     tags = info_dict['photo']['tags']
@@ -93,7 +29,7 @@ def process_one_photo(cur, flickr, photo_id, info_dict):
     while retries > 0:
         try:
             sizes = flickr.photos.getSizes(photo_id=photo_id,
-                                                    format='json')
+                                           format='json')
             retries = 0
             sizes_dict = json.loads(sizes.decode("utf-8"))
             source = None
@@ -104,8 +40,14 @@ def process_one_photo(cur, flickr, photo_id, info_dict):
             if source:
                 title = title.replace("'", '')
                 title = title.replace('"', '')
-                sql = "INSERT INTO pics(pic_id, date_taken, date_posted, date_updated, view_count, source, title, wallpaper) VALUES ('%s', '%s', '%s', '%s', %d, '%s', '%s', %s)"
-                final_sql = sql % (photo_id, taken, posted, updated, views, source, title, wallpaper)
+                sql = '''INSERT INTO
+                         pics(pic_id, date_taken, date_posted,
+                         date_updated, view_count, source, title,
+                         wallpaper) VALUES
+                         ('%s', '%s', '%s', '%s', %d, '%s', '%s', %s)'''
+                final_sql = sql % (photo_id, taken, posted,
+                                   updated, views, source, title,
+                                   wallpaper)
                 try:
                     cur.execute(final_sql)
                     print('Added %s' % title)
@@ -115,6 +57,7 @@ def process_one_photo(cur, flickr, photo_id, info_dict):
             print('retry %d' % retries)
             retries -= 1
             time.sleep(0.1)
+
 
 def prepare(cur):
     keys = flickr_keys()
@@ -134,6 +77,7 @@ def prepare(cur):
                 print('retry %d' % retries)
                 retries -= 1
                 time.sleep(0.1)
+
 
 def download(cur):
     download_count = 0
@@ -164,9 +108,11 @@ def download(cur):
 
 
 if __name__ == "__main__":
+    down_hlp = 'Download pictures tagged wallpaper or with > 100 views.'
+    prep_hlp = 'Populate database with info on all public pictures.'
     parser = argparse.ArgumentParser()
-    parser.add_argument('--download', action='store_true')
-    parser.add_argument('--prepare', action='store_true')
+    parser.add_argument('--download', action='store_true', help=down_hlp)
+    parser.add_argument('--prepare', action='store_true', help=prep_hlp)
     args = parser.parse_args()
 
     conn, cur = connect()
@@ -179,4 +125,3 @@ if __name__ == "__main__":
         else:
             parser.print_help()
         disconnect(conn, cur)
-
