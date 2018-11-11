@@ -1,10 +1,8 @@
 import os
-from PIL import Image
-from PIL import ImageFont
-from PIL import ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ExifTags
 import psycopg2
 import configparser
-from flickr_utils import connect, disconnect, flickr_keys
+from flickr_utils import connect, disconnect
 
 conn, cur = connect()
 
@@ -35,9 +33,28 @@ for filename in os.listdir(slideshow_path):
     title = db_dict[filename][0]
     date = db_dict[filename][1]
     img = Image.open(img_path)
-    draw = ImageDraw.Draw(img)
+    for orientation in ExifTags.TAGS.keys(): 
+        if ExifTags.TAGS[orientation]=='Orientation':
+            break 
 
+    e = img._getexif()
+    if e:
+        exif = dict(e.items())
+        if exif:
+            try:
+                orient = exif[orientation]
+                if orient == 3:  
+                    print('rotate 180') 
+                    img = img.transpose(Image.ROTATE_180)
+                elif orient == 6: 
+                    print('rotate 270') 
+                    img = img.transpose(Image.ROTATE_270)
+                elif orient == 8: 
+                    print('rotate 90') 
+                    img = img.transpose(Image.ROTATE_90)
+            except:
+                pass
+    draw = ImageDraw.Draw(img)
     draw.text((margins, margins), title, (255, 255, 255), font=font)
     draw.text((margins, margins*2), date, (255, 255, 255), font=font)
-
-    img.save(img_path)
+    img.save(img_path, quality=95)
