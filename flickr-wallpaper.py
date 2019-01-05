@@ -12,6 +12,9 @@ from flickr_utils import connect, disconnect, flickr_keys
 
 
 def process_one_photo(cur, flickr, photo_id, info_dict):
+    """Process one photo: using the metadata for the photo,
+    put the relevant information into the database.
+    """
     title = info_dict['photo']['title']['_content']
     taken = info_dict['photo']['dates']['taken']
     posted = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(
@@ -60,6 +63,9 @@ def process_one_photo(cur, flickr, photo_id, info_dict):
 
 
 def prepare(cur):
+    """Load the database with information on all of the pictures
+    in flickr.
+    """
     keys = flickr_keys()
     flickr = flickrapi.FlickrAPI(keys['api_key'], keys['api_secret'])
 
@@ -80,6 +86,9 @@ def prepare(cur):
 
 
 def download(cur):
+    """Download pictures from flickr that have greater than
+    100 views or are marked as wallpaper
+    """
     download_count = 0
     path = '/home/mick/Slideshow'
 

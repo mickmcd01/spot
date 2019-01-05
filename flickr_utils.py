@@ -4,6 +4,7 @@ import configparser
 
 
 def db_config(filename='/home/mick/flickr.ini'):
+    """Read the database configuration info."""
     # create a parser
     config = configparser.ConfigParser()
     # read config file
@@ -23,6 +24,7 @@ def db_config(filename='/home/mick/flickr.ini'):
 
 
 def flickr_keys(filename='/home/mick/flickr.ini'):
+    """Read the flickr key information."""
     # create a parser
     config = configparser.ConfigParser()
     # read config file
@@ -42,7 +44,7 @@ def flickr_keys(filename='/home/mick/flickr.ini'):
 
 
 def connect():
-    """ Connect to the PostgreSQL database server """
+    """Connect to the PostgreSQL database server."""
     conn = None
     try:
         # read connection parameters
@@ -72,5 +74,6 @@ def connect():
 
 
 def disconnect(conn, cur):
+    """Disconnect from PostgreSQL database."""
     cur.close()
     conn.close()

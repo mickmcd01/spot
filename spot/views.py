@@ -6,9 +6,11 @@ import spotipy.util as util
 import configparser
 
 def index(request):
+    """Show the home page."""
     return render(request, 'spot/index.html', None)
 
 def setup_spot():
+    """Perform spotify authentication."""
     try:
         config = configparser.ConfigParser()
         config.read('/home/mick/.spot.txt')
@@ -27,6 +29,7 @@ def setup_spot():
         return None
 
 def top_tracks(request, term):
+    """Show the user's top tracks, either short, medium, or long term."""
     top_tracks = []
     sp = setup_spot()
     if sp:
@@ -47,6 +50,7 @@ def top_tracks(request, term):
         raise Http404('<h1>Spotify authorization failed.</h1>')
 
 def top_artists(request, term):
+    """Show the user's top artists, either short, medium, or long term."""
     top_artists = []
     sp = setup_spot()
     if sp:
@@ -69,13 +73,14 @@ def top_artists(request, term):
 
 
 def recent_tracks(request):
+    """Show the user's 50 most recently played tracks."""
     # as of October 2018, pip install spotipy does not install the latest
     # version, and it does not include current_user_recently_played. Download
     # the latest from github to fix it.
     recently_played = []
     sp = setup_spot()
     if sp:
-        results = sp.current_user_recently_played(limit=20)
+        results = sp.current_user_recently_played(limit=50)
         for item in results['items']:
             recently_played.append(item)
         context = {'recent_tracks_list': recently_played}
@@ -85,6 +90,7 @@ def recent_tracks(request):
 
 
 def artist_detail(request, id):
+    """For a particular artist, show their top tracks."""
     top_tracks = []
     sp = setup_spot()
     if sp:
